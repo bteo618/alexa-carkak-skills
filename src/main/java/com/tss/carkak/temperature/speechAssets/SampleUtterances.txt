@@ -1,0 +1,7 @@
+TemperatureIntent i am cold
+TemperatureIntent cold
+TemperatureIntent very cold
+TemperatureIntent super cold
+TemperatureIntent sibeh cold
+TemperatureIntent really cold
+TemperatureIntent why so cold
