@@ -1,7 +1,24 @@
-TemperatureIntent i am cold
-TemperatureIntent cold
-TemperatureIntent very cold
-TemperatureIntent super cold
-TemperatureIntent sibeh cold
-TemperatureIntent really cold
-TemperatureIntent why so cold
+IncreaseTemperatureIntent i am cold
+IncreaseTemperatureIntent cold
+IncreaseTemperatureIntent very cold
+IncreaseTemperatureIntent super cold
+IncreaseTemperatureIntent sibeh cold
+IncreaseTemperatureIntent really cold
+IncreaseTemperatureIntent why so cold
+
+DecreaseTemperatureIntent i am warm
+DecreaseTemperatureIntent i am hot
+DecreaseTemperatureIntent hot
+DecreaseTemperatureIntent very hot
+DecreaseTemperatureIntent super hot
+
+SetTemperatureIntent i want 25 degree
+
+YesIntent yes
+YesIntent ok
+YesIntent great
+
+AMAZON.StopIntent no
+AMAZON.StopIntent nope
+AMAZON.StopIntent no thanks
+AMAZON.StopIntent no thank you
