@@ -47,13 +47,34 @@ public class TemperatureSpeechlet implements Speechlet {
         Intent intent = request.getIntent();
         String intentName = (intent != null) ? intent.getName() : null;
 
-        if ("TemperatureIntent".equals(intentName)) {
-            return getCurrentTemperatureResponse();
-        } else if ("AMAZON.HelpIntent".equals(intentName)) {
+        if ("IncreaseTemperatureIntent".equals(intentName)) {
+            return increaseTemperatureResponse();
+        }
+        else if ("DecreaseTemperatureIntent".equals(intentName)) {
+            return decreaseTemperatureResponse();
+        }
+        else if ("SetTemperatureIntent".equals(intentName)) {
+            return setTemperatureResponse();
+        }
+        else if ("YesIntent".equals(intentName)) {
+          return yesResponse();
+        }
+        else if ("AMAZON.HelpIntent".equals(intentName)) {
             return getHelpResponse();
-        } else if ("DecreaseTemperatureIntent".equals(intentName)){
-            return getDecreaseTemperatureResponse();
-        }else{
+        }
+        else if ("AMAZON.StopIntent".equals(intentName)) {
+          PlainTextOutputSpeech outputSpeech = new PlainTextOutputSpeech();
+          outputSpeech.setText("enjoy your drive bj, good bye.");
+
+          return SpeechletResponse.newTellResponse(outputSpeech);
+        }
+        else if ("AMAZON.CancelIntent".equals(intentName)) {
+          PlainTextOutputSpeech outputSpeech = new PlainTextOutputSpeech();
+          outputSpeech.setText("enjoy your drive bj, good bye.");
+
+          return SpeechletResponse.newTellResponse(outputSpeech);
+        }
+        else {
             throw new SpeechletException("Invalid Intent");
         }
     }
@@ -72,11 +93,11 @@ public class TemperatureSpeechlet implements Speechlet {
      * @return SpeechletResponse spoken and visual response for the given intent
      */
     private SpeechletResponse getWelcomeResponse() {
-        String speechText = "Hi, i am car kak, welcome and let me know if anything i can help.";
+        String speechText = "hi bj, how can i help you?";
 
         // Create the Simple card content.
         SimpleCard card = new SimpleCard();
-        card.setTitle("Temperature");
+        card.setTitle("Carkak Temperature");
         card.setContent(speechText);
 
         // Create the plain text output.
@@ -95,20 +116,74 @@ public class TemperatureSpeechlet implements Speechlet {
      *
      * @return SpeechletResponse spoken and visual response for the given intent
      */
-    private SpeechletResponse getCurrentTemperatureResponse() {
-        String speechText = "The current temperature in car is 24 degree.";
+    private SpeechletResponse increaseTemperatureResponse() {
+        String speechText = "u want to increase the temperature?";
 
         // Create the Simple card content.
         SimpleCard card = new SimpleCard();
-        card.setTitle("Temperature");
+        card.setTitle("Carkak Temperature");
         card.setContent(speechText);
 
         // Create the plain text output.
         PlainTextOutputSpeech speech = new PlainTextOutputSpeech();
         speech.setText(speechText);
 
-        return SpeechletResponse.newTellResponse(speech, card);
+        Reprompt reprompt = new Reprompt();
+        reprompt.setOutputSpeech(speech);
+
+        return SpeechletResponse.newAskResponse(speech, reprompt, card);
     }
+
+  private SpeechletResponse decreaseTemperatureResponse() {
+    String speechText = "u want to decrease the temperature?";
+
+    // Create the Simple card content.
+    SimpleCard card = new SimpleCard();
+    card.setTitle("Carkak Temperature");
+    card.setContent(speechText);
+
+    // Create the plain text output.
+    PlainTextOutputSpeech speech = new PlainTextOutputSpeech();
+    speech.setText(speechText);
+
+    Reprompt reprompt = new Reprompt();
+    reprompt.setOutputSpeech(speech);
+
+    return SpeechletResponse.newAskResponse(speech, reprompt, card);
+  }
+
+  private SpeechletResponse setTemperatureResponse() {
+    String speechText = "the temperature is now set to 25 degree, is that ok?";
+
+    // Create the Simple card content.
+    SimpleCard card = new SimpleCard();
+    card.setTitle("Carkak Temperature");
+    card.setContent(speechText);
+
+    // Create the plain text output.
+    PlainTextOutputSpeech speech = new PlainTextOutputSpeech();
+    speech.setText(speechText);
+
+    Reprompt reprompt = new Reprompt();
+    reprompt.setOutputSpeech(speech);
+
+    return SpeechletResponse.newAskResponse(speech, reprompt, card);
+  }
+
+  private SpeechletResponse yesResponse() {
+    String speechText = "enjoy your drive bj, good bye.";
+
+    // Create the Simple card content.
+    SimpleCard card = new SimpleCard();
+    card.setTitle("Carkak Temperature");
+    card.setContent(speechText);
+
+    // Create the plain text output.
+    PlainTextOutputSpeech speech = new PlainTextOutputSpeech();
+    speech.setText(speechText);
+
+    return SpeechletResponse.newTellResponse(speech, card);
+  }
 
     /**
      * Creates a {@code SpeechletResponse} for the help intent.
@@ -116,11 +191,11 @@ public class TemperatureSpeechlet implements Speechlet {
      * @return SpeechletResponse spoken and visual response for the given intent
      */
     private SpeechletResponse getHelpResponse() {
-        String speechText = "Hi, anything i can help?";
+        String speechText = "hi bj, how can i help you?";
 
         // Create the Simple card content.
         SimpleCard card = new SimpleCard();
-        card.setTitle("Temperature");
+        card.setTitle("Carkak Temperature");
         card.setContent(speechText);
 
         // Create the plain text output.
@@ -133,26 +208,4 @@ public class TemperatureSpeechlet implements Speechlet {
 
         return SpeechletResponse.newAskResponse(speech, reprompt, card);
     }
-
-    /**
-   * Creates a {@code SpeechletResponse} for the help intent.
-   *
-   * @return SpeechletResponse spoken and visual response for the given intent
-   */
-    private SpeechletResponse getDecreaseTemperatureResponse(){
-        String speechText = "The temperature has been lowered.";
-
-        // Create the Simple card content.
-        SimpleCard card = new SimpleCard();
-        card.setTitle("Temperature");
-        card.setContent(speechText);
-
-        // Create the plain text output.
-        PlainTextOutputSpeech speech = new PlainTextOutputSpeech();
-        speech.setText(speechText);
-
-        return SpeechletResponse.newTellResponse(speech, card);
-    }
-
-
 }

@@ -1,13 +1,25 @@
 {
   "intents": [
     {
-      "intent": "TemperatureIntent"
+      "intent": "IncreaseTemperatureIntent"
+    },
+    {
+      "intent": "DecreaseTemperatureIntent"
+    },
+    {
+      "intent": "SetTemperatureIntent"
+    },
+    {
+      "intent": "YesIntent"
     },
     {
       "intent": "AMAZON.HelpIntent"
     },
     {
-      "intent": "DecreaseTemperatureIntent"
+      "intent": "AMAZON.StopIntent"
+    },
+    {
+      "intent": "AMAZON.CancelIntent"
     }
   ]
 }
