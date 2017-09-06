@@ -5,3 +5,5 @@ TemperatureIntent super cold
 TemperatureIntent sibeh cold
 TemperatureIntent really cold
 TemperatureIntent why so cold
+
+DecreaseTemperatureIntent lower the temperature

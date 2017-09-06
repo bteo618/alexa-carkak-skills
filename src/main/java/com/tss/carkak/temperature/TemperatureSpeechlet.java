@@ -51,7 +51,9 @@ public class TemperatureSpeechlet implements Speechlet {
             return getCurrentTemperatureResponse();
         } else if ("AMAZON.HelpIntent".equals(intentName)) {
             return getHelpResponse();
-        } else {
+        } else if ("DecreaseTemperatureIntent".equals(intentName)){
+            return getDecreaseTemperatureResponse();
+        }else{
             throw new SpeechletException("Invalid Intent");
         }
     }
@@ -131,4 +133,26 @@ public class TemperatureSpeechlet implements Speechlet {
 
         return SpeechletResponse.newAskResponse(speech, reprompt, card);
     }
+
+    /**
+   * Creates a {@code SpeechletResponse} for the help intent.
+   *
+   * @return SpeechletResponse spoken and visual response for the given intent
+   */
+    private SpeechletResponse getDecreaseTemperatureResponse(){
+        String speechText = "The temperature has been lowered.";
+
+        // Create the Simple card content.
+        SimpleCard card = new SimpleCard();
+        card.setTitle("Temperature");
+        card.setContent(speechText);
+
+        // Create the plain text output.
+        PlainTextOutputSpeech speech = new PlainTextOutputSpeech();
+        speech.setText(speechText);
+
+        return SpeechletResponse.newTellResponse(speech, card);
+    }
+
+
 }
