@@ -21,6 +21,7 @@ import com.amazon.speech.ui.SimpleCard;
  */
 public class TemperatureSpeechlet implements Speechlet {
     private static final Logger log = LoggerFactory.getLogger(TemperatureSpeechlet.class);
+  private static final String SLOT_TEMPERATURE = "SetTemperature";
 
     @Override
     public void onSessionStarted(final SessionStartedRequest request, final Session session)
@@ -54,7 +55,7 @@ public class TemperatureSpeechlet implements Speechlet {
             return decreaseTemperatureResponse();
         }
         else if ("SetTemperatureIntent".equals(intentName)) {
-            return setTemperatureResponse();
+            return setTemperatureResponse(intent, session);
         }
         else if ("YesIntent".equals(intentName)) {
           return yesResponse();
@@ -152,7 +153,9 @@ public class TemperatureSpeechlet implements Speechlet {
     return SpeechletResponse.newAskResponse(speech, reprompt, card);
   }
 
-  private SpeechletResponse setTemperatureResponse() {
+  private SpeechletResponse setTemperatureResponse(Intent intent, Session session) {
+    int temperature = 0;
+    temperature = Integer.parseInt(intent.getSlot(SLOT_TEMPERATURE).getValue());
     String speechText = "the temperature is now set to 25 degree, is that ok?";
 
     // Create the Simple card content.
@@ -167,7 +170,21 @@ public class TemperatureSpeechlet implements Speechlet {
     Reprompt reprompt = new Reprompt();
     reprompt.setOutputSpeech(speech);
 
-    return SpeechletResponse.newAskResponse(speech, reprompt, card);
+    String speech2 = "the temperature is now set at " + temperature + " degrees, cool or not?";
+
+
+    return getTellSpeecletResponse(speech2);
+  }
+
+  private SpeechletResponse getTellSpeecletResponse(String speechText) {
+    SimpleCard card = new SimpleCard();
+    card.setTitle("Session");
+    card.setContent(speechText);
+
+    PlainTextOutputSpeech speech = new PlainTextOutputSpeech();
+    speech.setText(speechText);
+
+    return SpeechletResponse.newTellResponse(speech, card);
   }
 
   private SpeechletResponse yesResponse() {

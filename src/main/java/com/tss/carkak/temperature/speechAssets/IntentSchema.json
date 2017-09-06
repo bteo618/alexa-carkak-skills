@@ -7,7 +7,13 @@
       "intent": "DecreaseTemperatureIntent"
     },
     {
-      "intent": "SetTemperatureIntent"
+      "intent": "SetTemperatureIntent",
+      "slots":[
+        {
+          "name": "SetTemperature",
+          "type": "AMAZON.NUMBER"
+        }
+      ]
     },
     {
       "intent": "YesIntent"
