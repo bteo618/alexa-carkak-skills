@@ -44,6 +44,12 @@
     },
     {
       "intent": "AMAZON.CancelIntent"
-    }
+    },
+	{
+      "intent": "TurnOnLightIntent"
+    },
+    {
+      "intent": "TurnOffLightIntent"
+	}
   ]
 }

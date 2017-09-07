@@ -37,6 +37,16 @@ SetTemperatureIntent set temperature at {SetTemperature} degrees
 SetTemperatureIntent set temperature {SetTemperature} degrees
 
 
+TurnOnLightIntent please turn on the light
+TurnOnLightIntent to turn on the light
+TurnOnLightIntent turn on the light
+TurnOnLightIntent on the light
+
+TurnOffLightIntent please turn off the light
+TurnOffLightIntent to turn off the light
+TurnOffLightIntent turn off the light
+TurnOffLightIntent off the light
+
 YesIntent yes
 YesIntent ok
 YesIntent great
@@ -46,3 +56,4 @@ AMAZON.StopIntent nope
 AMAZON.StopIntent no thanks
 AMAZON.StopIntent no thank you
 AMAZON.StopIntent thank you
+
