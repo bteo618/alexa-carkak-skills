@@ -95,8 +95,8 @@ public class TemperatureSpeechlet implements Speechlet {
         return setIntroduceResponse(intent, session);
       }
         else if ("DecreaseTemperatureIntent".equals(intentName)) {
-            return decreaseTemperatureResponse();
-        if ("IncreaseTemperatureIntent".equals(intentName)) {
+        return decreaseTemperatureResponse();
+      }else if ("IncreaseTemperatureIntent".equals(intentName)) {
           StringBuilder response = new StringBuilder();
 //          if(session.getAttributes().containsKey(CATEGORY_STAGE)) {
 //            if (session.getAttribute(CATEGORY_STAGE) == TEMPERATURE_STAGE) {
@@ -200,7 +200,6 @@ public class TemperatureSpeechlet implements Speechlet {
     return SpeechletResponse.newTellResponse(speech, card);
   }
 
-    @Override
   private SpeechletResponse whatElseResponse() {
     String speechText = "what else can I do for you my friend?";
 //
