@@ -1,3 +1,5 @@
+IntroduceIntent (I'm/ Iam) {UserId}
+
 TemperatureIntent i am cold
 TemperatureIntent cold
 TemperatureIntent very cold

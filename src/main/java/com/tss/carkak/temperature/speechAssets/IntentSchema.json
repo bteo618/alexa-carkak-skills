@@ -16,6 +16,15 @@
       ]
     },
     {
+      "intent": "IntroduceIntent",
+      "slots":[
+        {
+          "name": "UserId",
+          "type": "LIST_OF_USER_ID"
+        }
+      ]
+    },
+    {
       "intent": "YesIntent"
     },
     {

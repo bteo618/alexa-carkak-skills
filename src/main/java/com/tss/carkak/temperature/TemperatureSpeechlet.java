@@ -26,6 +26,13 @@ import com.amazon.speech.speechlet.SpeechletResponse;
 import com.amazon.speech.ui.PlainTextOutputSpeech;
 import com.amazon.speech.ui.Reprompt;
 import com.amazon.speech.ui.SimpleCard;
+import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
+import com.amazonaws.services.dynamodbv2.AmazonDynamoDBClientBuilder;
+import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
+import com.amazonaws.services.dynamodbv2.document.DynamoDB;
+import com.amazonaws.services.dynamodbv2.document.Item;
+import com.amazonaws.services.dynamodbv2.document.Table;
+import com.tss.carkak.temperature.storage.UserProfile;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -40,6 +47,9 @@ import java.util.Scanner;
 public class TemperatureSpeechlet implements Speechlet {
     private static final Logger log = LoggerFactory.getLogger(TemperatureSpeechlet.class);
   private static final String SLOT_TEMPERATURE = "SetTemperature";
+  private Table table;
+  private UserProfile user;
+  private final String DEFAULT_USER = "bj";
 
     @Override
     public void onSessionStarted(final SessionStartedRequest request, final Session session)
@@ -54,6 +64,16 @@ public class TemperatureSpeechlet implements Speechlet {
             throws SpeechletException {
         log.info("onLaunch requestId={}, sessionId={}", request.getRequestId(),
                 session.getSessionId());
+        DynamoDB dynamoDB = new DynamoDB(getDynamoDBClient());
+        table = dynamoDB.getTable("UserProfile");
+        Item item = table.getItem("UserId",DEFAULT_USER);
+        if(null!=item){
+          log.info(item.toString());
+          user = new UserProfile(item.get("UserId").toString(),item.get("UserTemp").toString());
+        }else{
+          log.info("empty");
+        }
+
         return getWelcomeResponse();
     }
 
@@ -67,7 +87,10 @@ public class TemperatureSpeechlet implements Speechlet {
         String intentName = (intent != null) ? intent.getName() : null;
       StringBuilder stringBuilder2 = new StringBuilder();
 
-        if ("IncreaseTemperatureIntent".equals(intentName)) {
+      if ("IntroduceIntent".equals(intentName)) {
+        return setIntroduceResponse(intent, session);
+      }
+      else if ("IncreaseTemperatureIntent".equals(intentName)) {
             return increaseTemperatureResponse();
         }
         else if ("DecreaseTemperatureIntent".equals(intentName)) {
@@ -104,6 +127,35 @@ public class TemperatureSpeechlet implements Speechlet {
         }
     }
 
+  private SpeechletResponse setIntroduceResponse(Intent intent, Session session) {
+
+    UserProfile user = new UserProfile();
+    user.setUserId(intent.getSlot("UserId").getValue());
+
+    Item item = new Item();
+    item.withString("UserId",intent.getSlot("UserId").getValue())
+    .withString("UserTemp","26");
+
+    table.putItem(item);
+
+    String speechText = "the user profile is saved.";
+
+    // Create the Simple card content.
+    SimpleCard card = new SimpleCard();
+    card.setTitle("Carkak Temperature");
+    card.setContent(speechText);
+
+    // Create the plain text output.
+    PlainTextOutputSpeech speech = new PlainTextOutputSpeech();
+    speech.setText(speechText);
+
+    // Create reprompt
+    Reprompt reprompt = new Reprompt();
+    reprompt.setOutputSpeech(speech);
+
+    return SpeechletResponse.newTellResponse(speech, card);
+  }
+
     @Override
     public void onSessionEnded(final SessionEndedRequest request, final Session session)
             throws SpeechletException {
@@ -119,8 +171,8 @@ public class TemperatureSpeechlet implements Speechlet {
      */
     private SpeechletResponse getWelcomeResponse() {
         String currentTemp = requestCurrentTemp();
-        String speechText = "hi there, the current temperature is %s degrees";
-        speechText = String.format(speechText, currentTemp);
+        String speechText = "Hi %s, the current temperature is set to %s degrees.";
+        speechText = String.format(speechText, user.getUserId(), user.getUserTemp());
 
         String repromptString = "Hello, are you still there?";
 
@@ -226,6 +278,12 @@ return temperatureBean.getTemp();
     String speechText = "the temperature is now set to %s degree, is that ok?";
     speechText = String.format(speechText, temperature);
 
+    Item item = new Item();
+    item.withString("UserId",user.getUserId())
+        .withString("UserTemp",temperature);
+
+    table.putItem(item);
+
     // Create the Simple card content.
     SimpleCard card = new SimpleCard();
     card.setTitle("Carkak Temperature");
@@ -293,4 +351,10 @@ return temperatureBean.getTemp();
 
         return SpeechletResponse.newAskResponse(speech, reprompt, card);
     }
+
+  private AmazonDynamoDB getDynamoDBClient () {
+    AmazonDynamoDBClientBuilder builder = AmazonDynamoDBClientBuilder.standard();
+
+    return builder.build();
+  }
 }
