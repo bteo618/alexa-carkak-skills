@@ -16,10 +16,13 @@
       ]
     },
     {
-      "intent": "TurnOnLightIntent"
-    },
-    {
-      "intent": "TurnOffLightIntent"
+      "intent": "IncreaseTemperatureGradientIntent",
+      "slots":[
+        {
+          "name": "IncreaseTemperatureVal",
+          "type": "AMAZON.NUMBER"
+        }
+      ]
     },
     {
       "intent": "YesIntent"
@@ -32,6 +35,12 @@
     },
     {
       "intent": "AMAZON.CancelIntent"
-    }
+    },
+	{
+      "intent": "TurnOnLightIntent"
+    },
+    {
+      "intent": "TurnOffLightIntent"
+	}
   ]
 }
