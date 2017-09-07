@@ -17,10 +17,19 @@
     },
     {
       "intent": "IntroduceIntent",
-      "slots":[
+      "slots": [
         {
           "name": "UserId",
           "type": "LIST_OF_USER_ID"
+        }
+      ]
+    },
+    {
+      "intent": "IncreaseTemperatureGradientIntent",
+      "slots":[
+        {
+          "name": "IncreaseTemperatureVal",
+          "type": "AMAZON.NUMBER"
         }
       ]
     },

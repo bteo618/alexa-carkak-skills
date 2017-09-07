@@ -16,6 +16,11 @@ IncreaseTemperatureIntent sibeh cold
 IncreaseTemperatureIntent really cold
 IncreaseTemperatureIntent why so cold
 
+IncreaseTemperatureGradientIntent increase the temperature by {IncreaseTemperatureVal} degree
+IncreaseTemperatureGradientIntent increase the temperature by {IncreaseTemperatureVal} degrees
+IncreaseTemperatureGradientIntent increase temperature by {IncreaseTemperatureVal} degrees
+IncreaseTemperatureGradientIntent increase temperature by {IncreaseTemperatureVal} degrees
+
 DecreaseTemperatureIntent i am warm
 DecreaseTemperatureIntent i am hot
 DecreaseTemperatureIntent hot
@@ -25,7 +30,12 @@ DecreaseTemperatureIntent lower the temperature
 
 SetTemperatureIntent i want {SetTemperature} degree
 SetTemperatureIntent set temperature to {SetTemperature} degree
+SetTemperatureIntent set temperature {SetTemperature} degree
+SetTemperatureIntent set temperature at {SetTemperature} degree
 SetTemperatureIntent set temperature to {SetTemperature} degrees
+SetTemperatureIntent set temperature at {SetTemperature} degrees
+SetTemperatureIntent set temperature {SetTemperature} degrees
+
 
 YesIntent yes
 YesIntent ok
@@ -35,3 +45,4 @@ AMAZON.StopIntent no
 AMAZON.StopIntent nope
 AMAZON.StopIntent no thanks
 AMAZON.StopIntent no thank you
+AMAZON.StopIntent thank you
