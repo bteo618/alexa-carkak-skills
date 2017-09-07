@@ -1,5 +1,16 @@
 package com.tss.carkak.temperature;
 
+import com.google.gson.Gson;
+
+import org.apache.http.HttpResponse;
+import org.apache.http.NameValuePair;
+import org.apache.http.client.HttpClient;
+import org.apache.http.client.entity.UrlEncodedFormEntity;
+import org.apache.http.client.methods.HttpGet;
+import org.apache.http.client.methods.HttpPost;
+import org.apache.http.impl.client.DefaultHttpClient;
+import org.apache.http.message.BasicNameValuePair;
+import org.apache.http.util.EntityUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -15,6 +26,13 @@ import com.amazon.speech.speechlet.SpeechletResponse;
 import com.amazon.speech.ui.PlainTextOutputSpeech;
 import com.amazon.speech.ui.Reprompt;
 import com.amazon.speech.ui.SimpleCard;
+
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Scanner;
 
 /**
  * This Carkak skill shows how to adjust the temperature in car through speechlet requests.
@@ -47,6 +65,7 @@ public class TemperatureSpeechlet implements Speechlet {
 
         Intent intent = request.getIntent();
         String intentName = (intent != null) ? intent.getName() : null;
+      StringBuilder stringBuilder2 = new StringBuilder();
 
         if ("IncreaseTemperatureIntent".equals(intentName)) {
             return increaseTemperatureResponse();
@@ -55,7 +74,12 @@ public class TemperatureSpeechlet implements Speechlet {
             return decreaseTemperatureResponse();
         }
         else if ("SetTemperatureIntent".equals(intentName)) {
-            return setTemperatureResponse(intent, session);
+          try {
+            stringBuilder2.append(requestHttp(intent));
+          } catch (IOException e) {
+            e.printStackTrace();
+          }
+          return setTemperatureResponse(intent, stringBuilder2.toString(), session);
         }
         else if ("YesIntent".equals(intentName)) {
           return yesResponse();
@@ -94,31 +118,43 @@ public class TemperatureSpeechlet implements Speechlet {
      * @return SpeechletResponse spoken and visual response for the given intent
      */
     private SpeechletResponse getWelcomeResponse() {
-        String speechText = "hi bj, how can i help you?";
+        String currentTemp = requestCurrentTemp();
+        String speechText = "hi there, the current temperature is %s degrees";
+        speechText = String.format(speechText, currentTemp);
+
+        String repromptString = "Hello, are you still there?";
 
         // Create the Simple card content.
         SimpleCard card = new SimpleCard();
-        card.setTitle("Carkak Temperature");
+        card.setTitle("Carkak Home Screen");
         card.setContent(speechText);
 
         // Create the plain text output.
         PlainTextOutputSpeech speech = new PlainTextOutputSpeech();
         speech.setText(speechText);
 
+        PlainTextOutputSpeech repromptText = new PlainTextOutputSpeech();
+        repromptText.setText(repromptString);
+
         // Create reprompt
         Reprompt reprompt = new Reprompt();
-        reprompt.setOutputSpeech(speech);
+        reprompt.setOutputSpeech(repromptText);
 
         return SpeechletResponse.newAskResponse(speech, reprompt, card);
     }
 
-    /**
+  private String requestCurrentTemp() {
+      String currentTemp = "25";
+    return currentTemp;
+  }
+
+  /**
      * Creates a {@code SpeechletResponse} for the temperature intent.
      *
      * @return SpeechletResponse spoken and visual response for the given intent
      */
     private SpeechletResponse increaseTemperatureResponse() {
-        String speechText = "u want to increase the temperature?";
+        String speechText = "what temperature would you like me to set?";
 
         // Create the Simple card content.
         SimpleCard card = new SimpleCard();
@@ -153,10 +189,42 @@ public class TemperatureSpeechlet implements Speechlet {
     return SpeechletResponse.newAskResponse(speech, reprompt, card);
   }
 
-  private SpeechletResponse setTemperatureResponse(Intent intent, Session session) {
-    int temperature = 0;
-    temperature = Integer.parseInt(intent.getSlot(SLOT_TEMPERATURE).getValue());
-    String speechText = "the temperature is now set to 25 degree, is that ok?";
+  private String requestHttp(Intent intent) throws IOException {
+    HttpClient client = new DefaultHttpClient();
+    List<NameValuePair> params = new ArrayList<NameValuePair>();
+    params.add(new BasicNameValuePair("temp", intent.getSlot(SLOT_TEMPERATURE).getValue()));
+    Gson gson = new Gson();
+
+//    for (NameValuePair nvp : params) {
+//      String name = nvp.getName();
+//      String value = nvp.getValue();
+//      System.out.println("basic name: " + name + " -- " + value);
+//    }
+
+    HttpPost httpPost = new HttpPost("http://ec2-13-229-56-107.ap-southeast-1.compute.amazonaws.com/methods/setTemp");
+    httpPost.setEntity(new UrlEncodedFormEntity(params));
+    HttpResponse resp = client.execute(httpPost);
+    EntityUtils.consumeQuietly(resp.getEntity());
+
+    HttpGet request = new HttpGet("http://ec2-13-229-56-107.ap-southeast-1.compute.amazonaws.com/methods/getTemp");
+    HttpResponse response = client.execute(request);
+
+    BufferedReader rd = new BufferedReader(new InputStreamReader(response.getEntity().getContent()));
+    String line = "";
+    StringBuilder stringBuilder = new StringBuilder();
+    while ((line = rd.readLine()) != null) {
+
+      stringBuilder.append(line);
+    }
+    TemperatureBean temperatureBean = gson.fromJson(stringBuilder.toString(), TemperatureBean.class);
+    String message = org.apache.commons.io.IOUtils.toString(rd);
+    System.out.println("PLSSSS: " + temperatureBean.getTemp());
+return temperatureBean.getTemp();
+  }
+
+  private SpeechletResponse setTemperatureResponse(Intent intent, String temperature, Session session) {
+    String speechText = "the temperature is now set to %s degree, is that ok?";
+    speechText = String.format(speechText, temperature);
 
     // Create the Simple card content.
     SimpleCard card = new SimpleCard();
@@ -169,14 +237,14 @@ public class TemperatureSpeechlet implements Speechlet {
 
     Reprompt reprompt = new Reprompt();
     reprompt.setOutputSpeech(speech);
+//
+//    String speech2 = "the temperature is now set at " + temperature + " degrees, cool or not?";
 
-    String speech2 = "the temperature is now set at " + temperature + " degrees, cool or not?";
 
-
-    return getTellSpeecletResponse(speech2);
+    return getTellSpeechletResponse(speechText);
   }
 
-  private SpeechletResponse getTellSpeecletResponse(String speechText) {
+  private SpeechletResponse getTellSpeechletResponse(String speechText) {
     SimpleCard card = new SimpleCard();
     card.setTitle("Session");
     card.setContent(speechText);

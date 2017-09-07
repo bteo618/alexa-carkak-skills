@@ -13,6 +13,8 @@ DecreaseTemperatureIntent very hot
 DecreaseTemperatureIntent super hot
 
 SetTemperatureIntent i want {SetTemperature} degree
+SetTemperatureIntent set temperature to {SetTemperature} degree
+SetTemperatureIntent set temperature to {SetTemperature} degrees
 
 YesIntent yes
 YesIntent ok
