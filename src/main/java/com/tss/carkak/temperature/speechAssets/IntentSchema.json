@@ -16,6 +16,15 @@
       ]
     },
     {
+      "intent": "IncreaseTemperatureGradientIntent",
+      "slots":[
+        {
+          "name": "IncreaseTemperatureVal",
+          "type": "AMAZON.NUMBER"
+        }
+      ]
+    },
+    {
       "intent": "YesIntent"
     },
     {
