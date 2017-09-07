@@ -29,6 +29,7 @@ dependencies {
     compile 'com.amazonaws:aws-lambda-java-core:1.1.0'
     compile 'com.amazonaws:aws-java-sdk-dynamodb:1.11.172'
     compile 'com.amazonaws:aws-lambda-java-log4j:1.0.0'
+	compile 'com.google.code.gson:gson:2.8.0'
 
     compile 'org.apache.commons:commons-lang3:3.3.2'
     compile 'org.apache.directory.studio:org.apache.commons.io:2.4'
