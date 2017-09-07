@@ -16,6 +16,12 @@
       ]
     },
     {
+      "intent": "TurnOnLightIntent"
+    },
+    {
+      "intent": "TurnOffLightIntent"
+    },
+    {
       "intent": "YesIntent"
     },
     {

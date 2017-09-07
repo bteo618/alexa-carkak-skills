@@ -84,6 +84,12 @@ public class TemperatureSpeechlet implements Speechlet {
         else if ("YesIntent".equals(intentName)) {
           return yesResponse();
         }
+        else if ("TurnOnLightIntent".equals(intentName)) {
+          return getTurnOnLightResponse();
+        }
+        else if ("TurnOffLightIntent".equals(intentName)) {
+          return getTurnOffLightResponse();
+        }
         else if ("AMAZON.HelpIntent".equals(intentName)) {
             return getHelpResponse();
         }
@@ -104,7 +110,21 @@ public class TemperatureSpeechlet implements Speechlet {
         }
     }
 
-    @Override
+  private SpeechletResponse getTurnOffLightResponse() {
+    PlainTextOutputSpeech outputSpeech = new PlainTextOutputSpeech();
+    outputSpeech.setText("It is off.");
+
+    return SpeechletResponse.newTellResponse(outputSpeech);
+  }
+
+  private SpeechletResponse getTurnOnLightResponse() {
+    PlainTextOutputSpeech outputSpeech = new PlainTextOutputSpeech();
+    outputSpeech.setText("It is on.");
+
+    return SpeechletResponse.newTellResponse(outputSpeech);
+  }
+
+  @Override
     public void onSessionEnded(final SessionEndedRequest request, final Session session)
             throws SpeechletException {
         log.info("onSessionEnded requestId={}, sessionId={}", request.getRequestId(),
