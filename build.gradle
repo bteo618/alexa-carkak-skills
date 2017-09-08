@@ -20,6 +20,7 @@ jar {
 
 repositories {
 //	maven { url 'https://nexus.detss.corpintra.net/repository/maven-central/' }
+   // maven {url "http://nexus.detss.corpintra.net/repository/gradle-plugins/"}
     mavenCentral()
 }
 
@@ -36,6 +37,9 @@ dependencies {
     compile 'org.eclipse.jetty:jetty-server:9.0.6.v20130930'
     compile 'org.eclipse.jetty:jetty-servlet:9.0.6.v20130930'
     compile 'org.slf4j:slf4j-api:1.7.10'
+
+    testCompile 'junit:junit:4.12'
+    testCompile 'org.mockito:mockito-all:1.8.5'
 }
 
 task fatJar(type: Jar) {
