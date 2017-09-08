@@ -51,6 +51,8 @@ public class TemperatureSpeechlet implements Speechlet {
   protected Table table;
   protected Item item;
   protected UserProfile user;
+  protected HttpClient client;
+  protected HttpPost httpPost;
   private final String DEFAULT_USER = "bj";
   private static final String GRADIENT_TEMPERATURE = "IncreaseTemperatureVal";
   private static final String CATEGORY_STAGE = "categoryStage";
@@ -61,6 +63,9 @@ public class TemperatureSpeechlet implements Speechlet {
 
   protected static final String ITEM_PK_USER_ID = "UserId";
   protected static final String ITEM_USER_TEMPERATURE = "UserTemp";
+
+  protected static final String LIGHT_TURN_ON_END_POINT = "http://ec2-13-229-56-107.ap-southeast-1.compute.amazonaws.com/methods/onLamp";
+  protected static final String LIGHT_TURN_OFF_END_POINT = "http://ec2-13-229-56-107.ap-southeast-1.compute.amazonaws.com/methods/offLamp";
 
 
     @Override
@@ -211,7 +216,7 @@ public class TemperatureSpeechlet implements Speechlet {
       return newAskResponse("<speak>" + speechOutput + "</speak>", true, repromptText, false);
     }
 
-  private SpeechletResponse newAskResponse(String stringOutput, boolean isOutputSsml,
+  protected SpeechletResponse newAskResponse(String stringOutput, boolean isOutputSsml,
                                            String repromptText, boolean isRepromptSsml) {
     OutputSpeech outputSpeech, repromptOutputSpeech;
     if (isOutputSsml) {
@@ -327,7 +332,7 @@ public class TemperatureSpeechlet implements Speechlet {
         Reprompt reprompt = new Reprompt();
         reprompt.setOutputSpeech(repromptText);
 
-        return SpeechletResponse.newAskResponse(speech, reprompt, card);
+      return newAskResponse(card, speech, reprompt);
     }
 
   private String requestCurrentTemp() {
@@ -365,7 +370,7 @@ public class TemperatureSpeechlet implements Speechlet {
      *
      * @return SpeechletResponse spoken and visual response for the given intent
      */
-    private SpeechletResponse increaseTemperatureResponse() {
+    protected SpeechletResponse increaseTemperatureResponse() {
         String speechText = "what temperature would you like me to set?";
 
         // Create the Simple card content.
@@ -381,10 +386,14 @@ public class TemperatureSpeechlet implements Speechlet {
         reprompt.setOutputSpeech(speech);
 //        session.setAttribute(CATEGORY_STAGE, TEMPERATURE_STAGE);
 
-        return SpeechletResponse.newAskResponse(speech, reprompt, card);
+      return newAskResponse(card, speech, reprompt);
     }
 
-  private SpeechletResponse decreaseTemperatureResponse(Session session) {
+  protected SpeechletResponse newAskResponse(SimpleCard card, PlainTextOutputSpeech speech, Reprompt reprompt) {
+    return SpeechletResponse.newAskResponse(speech, reprompt, card);
+  }
+
+  protected SpeechletResponse decreaseTemperatureResponse(Session session) {
     String speechText = "u want to decrease the temperature?";
 
     // Create the Simple card content.
@@ -401,7 +410,7 @@ public class TemperatureSpeechlet implements Speechlet {
 
     session.setAttribute(CATEGORY_STAGE, DECREASE_TEMP_STAGE);
 
-    return SpeechletResponse.newAskResponse(speech, reprompt, card);
+    return newAskResponse(card, speech, reprompt);
   }
 
   private String requestHttp(Intent intent) throws IOException {
@@ -425,18 +434,24 @@ public class TemperatureSpeechlet implements Speechlet {
     return getCurrentTemp();
   }
 
-  private void httpPostTurnOnLight() throws IOException {
-    HttpClient client = new DefaultHttpClient();
-    HttpPost httpPost = new HttpPost("http://ec2-13-229-56-107.ap-southeast-1.compute.amazonaws.com/methods/onLamp");
+  protected void setUpNewHttpClient() {
+    client = new DefaultHttpClient();
+  }
+
+  protected void httpPostTurnOnLight() throws IOException {
+    httpPost = new HttpPost(LIGHT_TURN_ON_END_POINT);
     HttpResponse resp = client.execute(httpPost);
+    clearResponse(resp);
+  }
+
+  protected void clearResponse(HttpResponse resp) {
     EntityUtils.consumeQuietly(resp.getEntity());
   }
 
-  private void httpPostTurnOffLight() throws IOException {
-    HttpClient client = new DefaultHttpClient();
-    HttpPost httpPost = new HttpPost("http://ec2-13-229-56-107.ap-southeast-1.compute.amazonaws.com/methods/offLamp");
+  protected void httpPostTurnOffLight() throws IOException {
+    httpPost = new HttpPost(LIGHT_TURN_OFF_END_POINT);
     HttpResponse resp = client.execute(httpPost);
-    EntityUtils.consumeQuietly(resp.getEntity());
+    clearResponse(resp);
   }
 
   protected SpeechletResponse setTemperatureResponse(Intent intent, String temperature, Session session) {
@@ -468,7 +483,7 @@ public class TemperatureSpeechlet implements Speechlet {
     Reprompt reprompt = new Reprompt();
     reprompt.setOutputSpeech(speech);
 
-    return SpeechletResponse.newAskResponse(speech, reprompt, card);
+    return newAskResponse(card, speech, reprompt);
   }
 
   private SpeechletResponse getTellSpeechletResponse(String speechText) {
@@ -518,7 +533,7 @@ public class TemperatureSpeechlet implements Speechlet {
         Reprompt reprompt = new Reprompt();
         reprompt.setOutputSpeech(speech);
 
-        return SpeechletResponse.newAskResponse(speech, reprompt, card);
+      return newAskResponse(card, speech, reprompt);
     }
 
   private AmazonDynamoDB getDynamoDBClient () {
@@ -558,6 +573,6 @@ public class TemperatureSpeechlet implements Speechlet {
     HttpPost httpPost = new HttpPost("http://ec2-13-229-56-107.ap-southeast-1.compute.amazonaws.com/methods/setTemp");
     httpPost.setEntity(new UrlEncodedFormEntity(params));
     HttpResponse resp = client.execute(httpPost);
-    EntityUtils.consumeQuietly(resp.getEntity());
+    clearResponse(resp);
   }
 }
