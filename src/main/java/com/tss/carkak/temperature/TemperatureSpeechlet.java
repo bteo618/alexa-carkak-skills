@@ -54,6 +54,8 @@ public class TemperatureSpeechlet implements Speechlet {
   private static final String CATEGORY_STAGE = "categoryStage";
   private static final String TEMPERATURE_STAGE = "setTemperatureStage";
   private static final String DECREASE_TEMP_STAGE = "decreaseTemperature";
+  private static final int MAX_TEMP = 30;
+  private static final int MIN_TEMP = 16;
 
     @Override
     public void onSessionStarted(final SessionStartedRequest request, final Session session)
@@ -94,7 +96,7 @@ public class TemperatureSpeechlet implements Speechlet {
         return setIntroduceResponse(intent, session);
       }
         else if ("DecreaseTemperatureIntent".equals(intentName)) {
-        return decreaseTemperatureResponse();
+        return decreaseTemperatureResponse(session);
       }else if ("IncreaseTemperatureIntent".equals(intentName)) {
           StringBuilder response = new StringBuilder();
 //          if(session.getAttributes().containsKey(CATEGORY_STAGE)) {
@@ -113,6 +115,10 @@ public class TemperatureSpeechlet implements Speechlet {
         else if ("SetTemperatureIntent".equals(intentName)) {
           StringBuilder response = new StringBuilder();
             try {
+              int requestedTemp = Integer.parseInt(intent.getSlot(SLOT_TEMPERATURE).getValue());
+              if (requestedTemp > MAX_TEMP || requestedTemp < MIN_TEMP) {
+                return getAskSpeechletResponse("May I suggest a more hospitable temperature bro?");
+              }
               response.append(requestHttp(intent));
             } catch (IOException e) {
               e.printStackTrace();
@@ -193,6 +199,35 @@ public class TemperatureSpeechlet implements Speechlet {
             throw new SpeechletException("Invalid Intent");
         }
     }
+
+  private SpeechletResponse setIntroduceResponse(Intent intent, Session session) {
+
+    UserProfile user = new UserProfile();
+    user.setUserId(intent.getSlot("UserId").getValue());
+
+    Item item = new Item();
+    item.withString("UserId",intent.getSlot("UserId").getValue())
+        .withString("UserTemp","26");
+
+    table.putItem(item);
+
+    String speechText = "the user profile is saved.";
+
+    // Create the Simple card content.
+    SimpleCard card = new SimpleCard();
+    card.setTitle("Carkak Temperature");
+    card.setContent(speechText);
+
+    // Create the plain text output.
+    PlainTextOutputSpeech speech = new PlainTextOutputSpeech();
+    speech.setText(speechText);
+
+    // Create reprompt
+    Reprompt reprompt = new Reprompt();
+    reprompt.setOutputSpeech(speech);
+
+    return SpeechletResponse.newTellResponse(speech, card);
+  }
 
   private SpeechletResponse apaLagiMauResponse() {
     String speechText = "what else can I do for you my friend?";
