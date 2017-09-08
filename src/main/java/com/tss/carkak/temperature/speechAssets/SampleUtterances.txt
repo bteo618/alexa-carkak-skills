@@ -16,10 +16,10 @@ IncreaseTemperatureIntent sibeh cold
 IncreaseTemperatureIntent really cold
 IncreaseTemperatureIntent why so cold
 
-IncreaseTemperatureGradientIntent increase the temperature by {IncreaseTemperatureVal} degree
-IncreaseTemperatureGradientIntent increase the temperature by {IncreaseTemperatureVal} degrees
-IncreaseTemperatureGradientIntent increase temperature by {IncreaseTemperatureVal} degrees
-IncreaseTemperatureGradientIntent increase temperature by {IncreaseTemperatureVal} degrees
+IncreaseTemperatureGradientIntent {IncreaseDecrease} the temperature by {IncreaseTemperatureVal} degree
+IncreaseTemperatureGradientIntent {IncreaseDecrease} the temperature by {IncreaseTemperatureVal} degrees
+IncreaseTemperatureGradientIntent {IncreaseDecrease} temperature by {IncreaseTemperatureVal} degrees
+IncreaseTemperatureGradientIntent {IncreaseDecrease} temperature by {IncreaseTemperatureVal} degrees
 
 DecreaseTemperatureIntent i am warm
 DecreaseTemperatureIntent i am hot
