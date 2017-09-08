@@ -1,12 +1,5 @@
-IntroduceIntent (I'm/ Iam) {UserId}
-
-TemperatureIntent i am cold
-TemperatureIntent cold
-TemperatureIntent very cold
-TemperatureIntent super cold
-TemperatureIntent sibeh cold
-TemperatureIntent really cold
-TemperatureIntent why so cold
+IntroduceIntent I'm {UserId}
+IntroduceIntent I am {UserId}
 
 IncreaseTemperatureIntent i am cold
 IncreaseTemperatureIntent cold
@@ -16,10 +9,10 @@ IncreaseTemperatureIntent sibeh cold
 IncreaseTemperatureIntent really cold
 IncreaseTemperatureIntent why so cold
 
-IncreaseTemperatureGradientIntent increase the temperature by {IncreaseTemperatureVal} degree
-IncreaseTemperatureGradientIntent increase the temperature by {IncreaseTemperatureVal} degrees
-IncreaseTemperatureGradientIntent increase temperature by {IncreaseTemperatureVal} degrees
-IncreaseTemperatureGradientIntent increase temperature by {IncreaseTemperatureVal} degrees
+IncreaseTemperatureGradientIntent {IncreaseDecrease} the temperature by {IncreaseTemperatureVal} degree
+IncreaseTemperatureGradientIntent {IncreaseDecrease} the temperature by {IncreaseTemperatureVal} degrees
+IncreaseTemperatureGradientIntent {IncreaseDecrease} temperature by {IncreaseTemperatureVal} degrees
+IncreaseTemperatureGradientIntent {IncreaseDecrease} temperature by {IncreaseTemperatureVal} degrees
 
 DecreaseTemperatureIntent i am warm
 DecreaseTemperatureIntent i am hot
@@ -35,7 +28,6 @@ SetTemperatureIntent set temperature at {SetTemperature} degree
 SetTemperatureIntent set temperature to {SetTemperature} degrees
 SetTemperatureIntent set temperature at {SetTemperature} degrees
 SetTemperatureIntent set temperature {SetTemperature} degrees
-
 
 TurnOnLightIntent please turn on the light
 TurnOnLightIntent to turn on the light
@@ -56,4 +48,6 @@ AMAZON.StopIntent nope
 AMAZON.StopIntent no thanks
 AMAZON.StopIntent no thank you
 AMAZON.StopIntent thank you
+AMAZON.StopIntent nothing thanks
+AMAZON.StopIntent thanks
 
