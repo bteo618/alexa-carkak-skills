@@ -115,7 +115,7 @@ public class TemperatureSpeechlet implements Speechlet {
 //              return setTemperatureResponse(intent, response.toString(), session);
 //            }
 //          }
-            return increaseTemperatureResponse();
+            return increaseTemperatureResponse(session);
         }
         else if ("SetTemperatureIntent".equals(intentName)) {
           StringBuilder response = new StringBuilder();
@@ -166,10 +166,10 @@ public class TemperatureSpeechlet implements Speechlet {
           if(session.getAttributes().containsKey(CATEGORY_STAGE)) {
             System.out.println("enter");
             if (session.getAttribute(CATEGORY_STAGE).equals(TEMPERATURE_STAGE)) {
-              return apaLagiMauResponse();
+              return apaLagiMauResponse(session);
             }
             if (session.getAttribute(CATEGORY_STAGE).equals(DECREASE_TEMP_STAGE)) {
-              return increaseTemperatureResponse();
+              return increaseTemperatureResponse(session);
             }
           }
           return yesResponse();
@@ -186,8 +186,8 @@ public class TemperatureSpeechlet implements Speechlet {
         else if ("AMAZON.StopIntent".equals(intentName)) {
         if(session.getAttributes().containsKey(CATEGORY_STAGE)) {
           if (session.getAttribute(CATEGORY_STAGE).equals(TEMPERATURE_STAGE)) {
-            System.out.println(intent.getSlot(SLOT_TEMPERATURE).getValue());
-            return increaseTemperatureResponse();
+//            System.out.println(intent.getSlot("stop intent: " + SLOT_TEMPERATURE).getValue());
+            return increaseTemperatureResponse(session);
           }
         }
           PlainTextOutputSpeech outputSpeech = new PlainTextOutputSpeech();
@@ -209,7 +209,7 @@ public class TemperatureSpeechlet implements Speechlet {
         }
         else {
         speechOutput =
-            "Sorry, I couldn't correctly retrieve the joke. You can say, help.";
+            "Sorry, I couldn't understand that. You can say, help.";
         repromptText = "You can say, help.";
         }
       return newAskResponse("<speak>" + speechOutput + "</speak>", true, repromptText, false);
@@ -297,11 +297,15 @@ public class TemperatureSpeechlet implements Speechlet {
     return speechText;
   }
 
-  private SpeechletResponse apaLagiMauResponse() {
+  private SpeechletResponse apaLagiMauResponse(Session session) {
     String speechText = "what else can I do for you my friend?";
 //
 //    String speech2 = "the temperature is now set at " + temperature + " degrees, cool or not?";
 
+    System.out.println("TEMPPS: " + session.getAttribute(CATEGORY_STAGE));
+    session.removeAttribute(TEMPERATURE_STAGE);
+    session.removeAttribute(DECREASE_TEMP_STAGE);
+    System.out.println("TEMPPS22222: " + session.getAttribute(CATEGORY_STAGE));
     return getAskSpeechletResponse(speechText);
   }
 
@@ -399,7 +403,7 @@ public class TemperatureSpeechlet implements Speechlet {
      *
      * @return SpeechletResponse spoken and visual response for the given intent
      */
-    private SpeechletResponse increaseTemperatureResponse() {
+    private SpeechletResponse increaseTemperatureResponse(Session session) {
         String speechText = "what temperature would you like me to set?";
 
         // Create the Simple card content.
@@ -414,6 +418,7 @@ public class TemperatureSpeechlet implements Speechlet {
         Reprompt reprompt = new Reprompt();
         reprompt.setOutputSpeech(speech);
 //        session.setAttribute(CATEGORY_STAGE, TEMPERATURE_STAGE);
+      session.removeAttribute(DECREASE_TEMP_STAGE);
 
         return SpeechletResponse.newAskResponse(speech, reprompt, card);
     }
