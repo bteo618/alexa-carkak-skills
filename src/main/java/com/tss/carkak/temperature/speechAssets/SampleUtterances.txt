@@ -1,12 +1,5 @@
-IntroduceIntent (I'm/ Iam) {UserId}
-
-TemperatureIntent i am cold
-TemperatureIntent cold
-TemperatureIntent very cold
-TemperatureIntent super cold
-TemperatureIntent sibeh cold
-TemperatureIntent really cold
-TemperatureIntent why so cold
+IntroduceIntent I'm {UserId}
+IntroduceIntent I am {UserId}
 
 IncreaseTemperatureIntent i am cold
 IncreaseTemperatureIntent cold
@@ -56,4 +49,5 @@ AMAZON.StopIntent nope
 AMAZON.StopIntent no thanks
 AMAZON.StopIntent no thank you
 AMAZON.StopIntent thank you
+AMAZON.StopIntent nothing thanks
 
