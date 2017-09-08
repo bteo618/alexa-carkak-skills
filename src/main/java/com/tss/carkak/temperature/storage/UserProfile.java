@@ -28,7 +28,7 @@ public class UserProfile {
     this.userId = userId;
   }
 
-  @DynamoDBAttribute(attributeName="UserTemperature")
+  @DynamoDBAttribute(attributeName="UserTemp")
   public String getUserTemp() {
     return userTemp;
   }
