@@ -14,6 +14,7 @@ import com.tss.carkak.temperature.storage.UserProfile;
 
 import org.junit.Before;
 import org.junit.Test;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
 
 import static org.mockito.Mockito.atLeastOnce;
@@ -38,7 +39,7 @@ public class TemperatureSpeechletTest {
     intent = newIntent("DEFAULT");
     session = Session.builder().withSessionId("DEFAULT_SESSION_ID").build();
 
-    temperatureSpeechlet = new TemperatureSpeechlet();
+    temperatureSpeechlet = Mockito.spy(new TemperatureSpeechlet());
     temperatureSpeechlet.table = mockTable();
 
 
@@ -57,10 +58,13 @@ public class TemperatureSpeechletTest {
 
   @Test
   public void setTemperatureResponseTest() {
+    ArgumentCaptor<String> captor =  ArgumentCaptor.forClass(String.class);
     speechletResponse = temperatureSpeechlet.setTemperatureResponse(intent, temperature, session);
     verify(temperatureSpeechlet.table, times(1)).putItem(Mockito.any(Item.class));
     assertEquals(user.getUserId(), temperatureSpeechlet.item.get(ITEM_PK_USER_ID).toString());
     assertEquals(temperature, temperatureSpeechlet.item.get(ITEM_USER_TEMPERATURE).toString());
+    verify(temperatureSpeechlet, times(1)).getAskSpeechletResponse(captor.capture());
+    assertTrue(captor.getValue().indexOf(temperature) > -1);
   }
 
 }

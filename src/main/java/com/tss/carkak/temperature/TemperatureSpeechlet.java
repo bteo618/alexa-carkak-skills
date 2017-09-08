@@ -419,7 +419,7 @@ public class TemperatureSpeechlet implements Speechlet {
     return getAskSpeechletResponse(speechText);
   }
 
-  private SpeechletResponse getAskSpeechletResponse (String speechText) {
+  protected SpeechletResponse getAskSpeechletResponse (String speechText) {
     // Create the Simple card content.
     SimpleCard card = new SimpleCard();
     card.setTitle("Carkak Temperature");
