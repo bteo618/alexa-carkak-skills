@@ -23,9 +23,11 @@ import com.amazon.speech.speechlet.SessionStartedRequest;
 import com.amazon.speech.speechlet.Speechlet;
 import com.amazon.speech.speechlet.SpeechletException;
 import com.amazon.speech.speechlet.SpeechletResponse;
+import com.amazon.speech.ui.OutputSpeech;
 import com.amazon.speech.ui.PlainTextOutputSpeech;
 import com.amazon.speech.ui.Reprompt;
 import com.amazon.speech.ui.SimpleCard;
+import com.amazon.speech.ui.SsmlOutputSpeech;
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDBClientBuilder;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
@@ -91,6 +93,7 @@ public class TemperatureSpeechlet implements Speechlet {
 
         Intent intent = request.getIntent();
         String intentName = (intent != null) ? intent.getName() : null;
+      String speechOutput = "", repromptText = "";
 
       if ("IntroduceIntent".equals(intentName)) {
         return setIntroduceResponse(intent, session);
@@ -114,15 +117,15 @@ public class TemperatureSpeechlet implements Speechlet {
         }
         else if ("SetTemperatureIntent".equals(intentName)) {
           StringBuilder response = new StringBuilder();
-            try {
               int requestedTemp = Integer.parseInt(intent.getSlot(SLOT_TEMPERATURE).getValue());
               if (requestedTemp > MAX_TEMP || requestedTemp < MIN_TEMP) {
                 return getAskSpeechletResponse("May I suggest a more hospitable temperature bro?");
               }
-              response.append(requestHttp(intent));
-            } catch (IOException e) {
-              e.printStackTrace();
-            }
+        try {
+          response.append(requestHttp(intent));
+        } catch (IOException e) {
+          e.printStackTrace();
+        }
 //            session.setAttribute(CATEGORY_STAGE, TEMPERATURE_STAGE);
             return setTemperatureResponse(intent, response.toString(), session);
         }
@@ -179,26 +182,54 @@ public class TemperatureSpeechlet implements Speechlet {
             return getHelpResponse();
         }
         else if ("AMAZON.StopIntent".equals(intentName)) {
+        if(session.getAttributes().containsKey(CATEGORY_STAGE)) {
+          if (session.getAttribute(CATEGORY_STAGE).equals(TEMPERATURE_STAGE)) {
+            System.out.println(intent.getSlot(SLOT_TEMPERATURE).getValue());
+            return increaseTemperatureResponse();
+          }
+        }
           PlainTextOutputSpeech outputSpeech = new PlainTextOutputSpeech();
           outputSpeech.setText("enjoy your drive bj, good bye.");
 
           return SpeechletResponse.newTellResponse(outputSpeech);
         }
         else if ("AMAZON.CancelIntent".equals(intentName)) {
-          if(session.getAttributes().containsKey(CATEGORY_STAGE)) {
-            if (session.getAttribute(CATEGORY_STAGE).equals(TEMPERATURE_STAGE)) {
-              increaseTemperatureResponse();
-            }
-          }
           PlainTextOutputSpeech outputSpeech = new PlainTextOutputSpeech();
           outputSpeech.setText("enjoy your drive bj, good bye.");
 
           return SpeechletResponse.newTellResponse(outputSpeech);
         }
         else {
-            throw new SpeechletException("Invalid Intent");
+        speechOutput =
+            "Sorry, I couldn't correctly retrieve the joke. You can say, help.";
+        repromptText = "You can say, help.";
         }
+      return newAskResponse("<speak>" + speechOutput + "</speak>", true, repromptText, false);
     }
+
+  private SpeechletResponse newAskResponse(String stringOutput, boolean isOutputSsml,
+                                           String repromptText, boolean isRepromptSsml) {
+    OutputSpeech outputSpeech, repromptOutputSpeech;
+    if (isOutputSsml) {
+      outputSpeech = new SsmlOutputSpeech();
+      ((SsmlOutputSpeech) outputSpeech).setSsml(stringOutput);
+    } else {
+      outputSpeech = new PlainTextOutputSpeech();
+      ((PlainTextOutputSpeech) outputSpeech).setText(stringOutput);
+    }
+
+    if (isRepromptSsml) {
+      repromptOutputSpeech = new SsmlOutputSpeech();
+      ((SsmlOutputSpeech) repromptOutputSpeech).setSsml(repromptText);
+    } else {
+      repromptOutputSpeech = new PlainTextOutputSpeech();
+      ((PlainTextOutputSpeech) repromptOutputSpeech).setText(repromptText);
+    }
+    Reprompt reprompt = new Reprompt();
+    reprompt.setOutputSpeech(repromptOutputSpeech);
+    return SpeechletResponse.newAskResponse(outputSpeech, reprompt);
+  }
+
 
   private SpeechletResponse setIntroduceResponse(Intent intent, Session session) {
 
@@ -374,7 +405,6 @@ public class TemperatureSpeechlet implements Speechlet {
     List<NameValuePair> params = new ArrayList<NameValuePair>();
     params.add(new BasicNameValuePair("temp", intent.getSlot(SLOT_TEMPERATURE).getValue()));
 
-    System.out.println("starttt: " + intent.getSlot(SLOT_TEMPERATURE).getValue());
 //    Gson gson = new Gson();
 
 //    for (NameValuePair nvp : params) {
