@@ -359,10 +359,16 @@ public class TemperatureSpeechlet implements Speechlet {
     return getCurrentTemp();
   }
 
-  private void httpPostTemp(List<NameValuePair> params) throws IOException {
+  private void httpPostTurnOnLight() throws IOException {
     HttpClient client = new DefaultHttpClient();
-    HttpPost httpPost = new HttpPost("http://ec2-13-229-56-107.ap-southeast-1.compute.amazonaws.com/methods/setTemp");
-    httpPost.setEntity(new UrlEncodedFormEntity(params));
+    HttpPost httpPost = new HttpPost("http://ec2-13-229-56-107.ap-southeast-1.compute.amazonaws.com/methods/onLamp");
+    HttpResponse resp = client.execute(httpPost);
+    EntityUtils.consumeQuietly(resp.getEntity());
+  }
+
+  private void httpPostTurnOffLight() throws IOException {
+    HttpClient client = new DefaultHttpClient();
+    HttpPost httpPost = new HttpPost("http://ec2-13-229-56-107.ap-southeast-1.compute.amazonaws.com/methods/offLamp");
     HttpResponse resp = client.execute(httpPost);
     EntityUtils.consumeQuietly(resp.getEntity());
   }
@@ -457,6 +463,12 @@ public class TemperatureSpeechlet implements Speechlet {
   }
 
   private SpeechletResponse getTurnOffLightResponse() {
+    try {
+      httpPostTurnOffLight();
+    } catch (IOException e) {
+      e.printStackTrace();
+    }
+
     PlainTextOutputSpeech outputSpeech = new PlainTextOutputSpeech();
     outputSpeech.setText("It is off.");
 
@@ -464,9 +476,22 @@ public class TemperatureSpeechlet implements Speechlet {
   }
 
   private SpeechletResponse getTurnOnLightResponse() {
+    try {
+      httpPostTurnOnLight();
+    } catch (IOException e) {
+      e.printStackTrace();
+    }
     PlainTextOutputSpeech outputSpeech = new PlainTextOutputSpeech();
     outputSpeech.setText("It is on.");
 
     return SpeechletResponse.newTellResponse(outputSpeech);
+  }
+
+  private void httpPostTemp(List<NameValuePair> params) throws IOException {
+    HttpClient client = new DefaultHttpClient();
+    HttpPost httpPost = new HttpPost("http://ec2-13-229-56-107.ap-southeast-1.compute.amazonaws.com/methods/setTemp");
+    httpPost.setEntity(new UrlEncodedFormEntity(params));
+    HttpResponse resp = client.execute(httpPost);
+    EntityUtils.consumeQuietly(resp.getEntity());
   }
 }
