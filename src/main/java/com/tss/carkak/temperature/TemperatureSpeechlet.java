@@ -270,8 +270,7 @@ public class TemperatureSpeechlet implements Speechlet {
 //    String speech2 = "the temperature is now set at " + temperature + " degrees, cool or not?";
 
     System.out.println("TEMPPS: " + session.getAttribute(CATEGORY_STAGE));
-    session.removeAttribute(TEMPERATURE_STAGE);
-    session.removeAttribute(DECREASE_TEMP_STAGE);
+    session.removeAttribute(CATEGORY_STAGE);
     System.out.println("TEMPPS22222: " + session.getAttribute(CATEGORY_STAGE));
     return getAskSpeechletResponse(speechText);
   }
@@ -384,9 +383,11 @@ public class TemperatureSpeechlet implements Speechlet {
         Reprompt reprompt = new Reprompt();
         reprompt.setOutputSpeech(speech);
 //        session.setAttribute(CATEGORY_STAGE, TEMPERATURE_STAGE);
-      session.removeAttribute(DECREASE_TEMP_STAGE);
+      System.out.println("initial Increase: " + session.getAttribute(CATEGORY_STAGE));
+      session.removeAttribute(CATEGORY_STAGE);
+      System.out.println("later Increase: " + session.getAttribute(CATEGORY_STAGE));
 
-        return SpeechletResponse.newAskResponse(speech, reprompt, card);
+      return SpeechletResponse.newAskResponse(speech, reprompt, card);
     }
 
   private SpeechletResponse decreaseTemperatureResponse(Session session) {
