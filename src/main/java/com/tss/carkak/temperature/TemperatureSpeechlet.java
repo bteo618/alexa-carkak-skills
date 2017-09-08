@@ -51,7 +51,7 @@ public class TemperatureSpeechlet implements Speechlet {
 
   private Table table;
   private UserProfile user;
-  private final String DEFAULT_USER = "bj";
+  private final String DEFAULT_USER = "default";
   private static final String GRADIENT_TEMPERATURE = "IncreaseTemperatureVal";
   private static final String CATEGORY_STAGE = "categoryStage";
   private static final String TEMPERATURE_STAGE = "setTemperatureStage";
@@ -71,12 +71,10 @@ public class TemperatureSpeechlet implements Speechlet {
                 session.getSessionId());
         DynamoDB dynamoDB = new DynamoDB(getDynamoDBClient());
         table = dynamoDB.getTable("UserProfile");
-        Item item = table.getItem("UserId",DEFAULT_USER);
-        if(null!=item){
-          log.info(item.toString());
-          user = new UserProfile(item.get("UserId").toString(),item.get("UserTemp").toString());
-        }else{
-          log.info("empty");
+        try{
+          user = new UserProfile(DEFAULT_USER, getCurrentTemp());
+        }catch(IOException ex){
+          log.error(ex.toString());
         }
 
         return getWelcomeResponse();
@@ -84,7 +82,7 @@ public class TemperatureSpeechlet implements Speechlet {
 
     @Override
     public SpeechletResponse onIntent(final IntentRequest request, final Session session)
-            throws SpeechletException {
+            throws SpeechletException{
         log.info("onIntent requestId={}, sessionId={}", request.getRequestId(),
                 session.getSessionId());
 
@@ -162,13 +160,19 @@ public class TemperatureSpeechlet implements Speechlet {
         }
         else if ("AMAZON.StopIntent".equals(intentName)) {
           PlainTextOutputSpeech outputSpeech = new PlainTextOutputSpeech();
-          outputSpeech.setText("enjoy your drive bj, good bye.");
+          String speechText = "enjoy your drive %s, good bye.";
+          String userId = user.getUserId();
+          speechText = String.format(speechText, (userId=="default"?"":userId));
+          outputSpeech.setText(speechText);
 
           return SpeechletResponse.newTellResponse(outputSpeech);
         }
         else if ("AMAZON.CancelIntent".equals(intentName)) {
           PlainTextOutputSpeech outputSpeech = new PlainTextOutputSpeech();
-          outputSpeech.setText("enjoy your drive bj, good bye.");
+          String speechText = "enjoy your drive %s, good bye.";
+          String userId = user.getUserId();
+          speechText = String.format(speechText, (userId=="default"?"":userId));
+          outputSpeech.setText(speechText);
 
           return SpeechletResponse.newTellResponse(outputSpeech);
         }
@@ -177,18 +181,9 @@ public class TemperatureSpeechlet implements Speechlet {
         }
     }
 
-  private SpeechletResponse setIntroduceResponse(Intent intent, Session session) {
-
-    UserProfile user = new UserProfile();
-    user.setUserId(intent.getSlot("UserId").getValue());
-
-    Item item = new Item();
-    item.withString("UserId",intent.getSlot("UserId").getValue())
-    .withString("UserTemp","26");
-
-    table.putItem(item);
-
-    String speechText = "the user profile is saved.";
+  private SpeechletResponse setIntroduceResponse(Intent intent, Session session){
+    String speechText = "";
+    Item item = table.getItem("UserId",intent.getSlot("UserId").getValue());
 
     // Create the Simple card content.
     SimpleCard card = new SimpleCard();
@@ -197,13 +192,57 @@ public class TemperatureSpeechlet implements Speechlet {
 
     // Create the plain text output.
     PlainTextOutputSpeech speech = new PlainTextOutputSpeech();
-    speech.setText(speechText);
+
+    boolean isNewUser = false;
+
+    try{
+      if(null!=item){
+        log.info(item.toString());
+        Object userId = item.get("UserId");
+        Object userTemp = item.get("UserTemp");
+        user = new UserProfile(userId.toString(),userTemp==null?getCurrentTemp():userTemp.toString());
+        speechText = switchUser();
+        speech.setText(speechText);
+        isNewUser = false;
+      }else{
+        user = new UserProfile(intent.getSlot("UserId").getValue(),getCurrentTemp());
+        speechText = registerUser();
+        speech.setText(speechText);
+        isNewUser = true;
+      }
+    }catch(IOException ex){
+      log.error(ex.toString());
+    }
 
     // Create reprompt
     Reprompt reprompt = new Reprompt();
     reprompt.setOutputSpeech(speech);
 
-    return SpeechletResponse.newTellResponse(speech, card);
+    return isNewUser ? SpeechletResponse.newAskResponse(speech,reprompt,card) : SpeechletResponse
+        .newTellResponse(speech,
+        card);
+  }
+
+  private String switchUser() throws IOException{
+    List<NameValuePair> params = new ArrayList<NameValuePair>();
+    params.add(new BasicNameValuePair("temp", user.getUserTemp()));
+    httpPostTemp(params);
+    String speechText = "Hi %s, the current temperature has set to your last preference " +
+        "temperature.";
+    speechText = String.format(speechText,user.getUserId());
+    return speechText;
+  }
+
+  private String registerUser(){
+    Item item = new Item();
+    item.withString("UserId",user.getUserId())
+        .withString("UserTemp",user.getUserTemp());
+
+    table.putItem(item);
+    String speechText = "Hi %s, you have been registered and your default preference temperature " +
+        "is set. Would you like to adjust the temperature?";
+    speechText = String.format(speechText,user.getUserId());
+    return speechText;
   }
 
   private SpeechletResponse whatElseResponse() {
@@ -242,7 +281,8 @@ public class TemperatureSpeechlet implements Speechlet {
     private SpeechletResponse getWelcomeResponse() {
         String currentTemp = requestCurrentTemp();
         String speechText = "Hi %s, the current temperature is set to %s degrees.";
-        speechText = String.format(speechText, user.getUserId(), user.getUserTemp());
+        String userId = user.getUserId();
+        speechText = String.format(speechText, (userId=="default"?"":userId), user.getUserTemp());
 
         String repromptString = "Hello, are you still there?";
 
@@ -371,16 +411,20 @@ public class TemperatureSpeechlet implements Speechlet {
     String speechText = "the temperature is now set to %s degree, is that ok?";
     speechText = String.format(speechText, temperature);
 //
-    Item item = new Item();
-    item.withString("UserId",user.getUserId())
-        .withString("UserTemp",temperature);
-
-    table.putItem(item);
+    updateUserTemperature(user.getUserId(), temperature);
 //    String speech2 = "the temperature is now set at " + temperature + " degrees, cool or not?";
 
     session.setAttribute(CATEGORY_STAGE, TEMPERATURE_STAGE);
 
     return getAskSpeechletResponse(speechText);
+  }
+
+  private void updateUserTemperature(String userId, String temperature){
+    Item item = new Item();
+    item.withString("UserId",userId)
+        .withString("UserTemp",temperature);
+
+    table.putItem(item);
   }
 
   private SpeechletResponse getAskSpeechletResponse (String speechText) {
@@ -411,7 +455,9 @@ public class TemperatureSpeechlet implements Speechlet {
   }
 
   private SpeechletResponse yesResponse() {
-    String speechText = "enjoy your drive bj, good bye.";
+    String speechText = "enjoy your drive %s, good bye.";
+    String userId = user.getUserId();
+    speechText = String.format(speechText, (userId=="default"?"":userId));
 
     // Create the Simple card content.
     SimpleCard card = new SimpleCard();
@@ -431,7 +477,9 @@ public class TemperatureSpeechlet implements Speechlet {
      * @return SpeechletResponse spoken and visual response for the given intent
      */
     private SpeechletResponse getHelpResponse() {
-        String speechText = "hi bj, how can i help you?";
+        String speechText = "hi %s, how can i help you?";
+        String userId = user.getUserId();
+        speechText = String.format(speechText, (userId=="default"?"":userId));
 
         // Create the Simple card content.
         SimpleCard card = new SimpleCard();
