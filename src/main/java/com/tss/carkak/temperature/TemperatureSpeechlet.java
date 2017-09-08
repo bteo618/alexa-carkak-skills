@@ -28,7 +28,6 @@ import com.amazon.speech.ui.Reprompt;
 import com.amazon.speech.ui.SimpleCard;
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDBClientBuilder;
-import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
 import com.amazonaws.services.dynamodbv2.document.DynamoDB;
 import com.amazonaws.services.dynamodbv2.document.Item;
 import com.amazonaws.services.dynamodbv2.document.Table;
@@ -37,10 +36,8 @@ import com.tss.carkak.temperature.storage.UserProfile;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Scanner;
 
 /**
  * This Carkak skill shows how to adjust the temperature in car through speechlet requests.
@@ -49,12 +46,17 @@ public class TemperatureSpeechlet implements Speechlet {
     private static final Logger log = LoggerFactory.getLogger(TemperatureSpeechlet.class);
   private static final String SLOT_TEMPERATURE = "SetTemperature";
 
-  private Table table;
-  private UserProfile user;
+  protected Table table;
+  protected Item item;
+  protected UserProfile user;
   private final String DEFAULT_USER = "bj";
   private static final String GRADIENT_TEMPERATURE = "IncreaseTemperatureVal";
   private static final String CATEGORY_STAGE = "categoryStage";
   private static final String TEMPERATURE_STAGE = "setTemperatureStage";
+
+  protected static final String ITEM_PK_USER_ID = "UserId";
+  protected static final String ITEM_USER_TEMPERATURE = "UserTemp";
+
 
     @Override
     public void onSessionStarted(final SessionStartedRequest request, final Session session)
@@ -71,10 +73,10 @@ public class TemperatureSpeechlet implements Speechlet {
                 session.getSessionId());
         DynamoDB dynamoDB = new DynamoDB(getDynamoDBClient());
         table = dynamoDB.getTable("UserProfile");
-        Item item = table.getItem("UserId",DEFAULT_USER);
+        Item item = table.getItem(ITEM_PK_USER_ID,DEFAULT_USER);
         if(null!=item){
           log.info(item.toString());
-          user = new UserProfile(item.get("UserId").toString(),item.get("UserTemp").toString());
+          user = new UserProfile(item.get(ITEM_PK_USER_ID).toString(),item.get(ITEM_USER_TEMPERATURE).toString());
         }else{
           log.info("empty");
         }
@@ -180,11 +182,11 @@ public class TemperatureSpeechlet implements Speechlet {
   private SpeechletResponse setIntroduceResponse(Intent intent, Session session) {
 
     UserProfile user = new UserProfile();
-    user.setUserId(intent.getSlot("UserId").getValue());
+    user.setUserId(intent.getSlot(ITEM_PK_USER_ID).getValue());
 
     Item item = new Item();
-    item.withString("UserId",intent.getSlot("UserId").getValue())
-    .withString("UserTemp","26");
+    item.withString(ITEM_PK_USER_ID,intent.getSlot(ITEM_PK_USER_ID).getValue())
+    .withString(ITEM_USER_TEMPERATURE,"26");
 
     table.putItem(item);
 
@@ -367,13 +369,13 @@ public class TemperatureSpeechlet implements Speechlet {
     EntityUtils.consumeQuietly(resp.getEntity());
   }
 
-  private SpeechletResponse setTemperatureResponse(Intent intent, String temperature, Session session) {
+  protected SpeechletResponse setTemperatureResponse(Intent intent, String temperature, Session session) {
     String speechText = "the temperature is now set to %s degree, is that ok?";
     speechText = String.format(speechText, temperature);
 //
-    Item item = new Item();
-    item.withString("UserId",user.getUserId())
-        .withString("UserTemp",temperature);
+    item = new Item();
+    item.withString(ITEM_PK_USER_ID,user.getUserId())
+        .withString(ITEM_USER_TEMPERATURE,temperature);
 
     table.putItem(item);
 //    String speech2 = "the temperature is now set at " + temperature + " degrees, cool or not?";
