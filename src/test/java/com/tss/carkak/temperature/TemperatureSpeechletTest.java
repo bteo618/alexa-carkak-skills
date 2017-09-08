@@ -71,7 +71,7 @@ public class TemperatureSpeechletTest {
 
   @Test
   public void increaseTemperatureResponseTest() {
-    speechletResponse = temperatureSpeechlet.increaseTemperatureResponse();
+    speechletResponse = temperatureSpeechlet.increaseTemperatureResponse(session);
     verify(temperatureSpeechlet, times(1)).newAskResponse(Mockito.any(SimpleCard.class), Mockito.any(PlainTextOutputSpeech.class), Mockito.any(Reprompt.class));
   }
 
