@@ -19,7 +19,7 @@ public final class TemperatureSpeechletRequestStreamHandler extends SpeechletReq
          * This Id can be found on https://developer.amazon.com/edw/home.html#/ "Edit" the relevant
          * Alexa Skill and put the relevant Application Ids in this Set.
          */
-        supportedApplicationIds.add("amzn1.ask.skill.7f384c02-475f-4d54-957c-7ec59b232c42");
+//        supportedApplicationIds.add("amzn1.ask.skill.66cc6e2f-03cd-48d4-a07c-c97996b49183");
     }
 
     public TemperatureSpeechletRequestStreamHandler() {

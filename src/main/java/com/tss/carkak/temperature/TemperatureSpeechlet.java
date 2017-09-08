@@ -37,10 +37,8 @@ import com.tss.carkak.temperature.storage.UserProfile;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Scanner;
 
 /**
  * This Carkak skill shows how to adjust the temperature in car through speechlet requests.
@@ -55,6 +53,9 @@ public class TemperatureSpeechlet implements Speechlet {
   private static final String GRADIENT_TEMPERATURE = "IncreaseTemperatureVal";
   private static final String CATEGORY_STAGE = "categoryStage";
   private static final String TEMPERATURE_STAGE = "setTemperatureStage";
+  private static final String DECREASE_TEMP_STAGE = "decreaseTemperature";
+  private static final int MAX_TEMP = 30;
+  private static final int MIN_TEMP = 16;
 
     @Override
     public void onSessionStarted(final SessionStartedRequest request, final Session session)
@@ -95,7 +96,7 @@ public class TemperatureSpeechlet implements Speechlet {
         return setIntroduceResponse(intent, session);
       }
         else if ("DecreaseTemperatureIntent".equals(intentName)) {
-        return decreaseTemperatureResponse();
+        return decreaseTemperatureResponse(session);
       }else if ("IncreaseTemperatureIntent".equals(intentName)) {
           StringBuilder response = new StringBuilder();
 //          if(session.getAttributes().containsKey(CATEGORY_STAGE)) {
@@ -109,11 +110,15 @@ public class TemperatureSpeechlet implements Speechlet {
 //              return setTemperatureResponse(intent, response.toString(), session);
 //            }
 //          }
-            return increaseTemperatureResponse(session);
+            return increaseTemperatureResponse();
         }
         else if ("SetTemperatureIntent".equals(intentName)) {
           StringBuilder response = new StringBuilder();
             try {
+              int requestedTemp = Integer.parseInt(intent.getSlot(SLOT_TEMPERATURE).getValue());
+              if (requestedTemp > MAX_TEMP || requestedTemp < MIN_TEMP) {
+                return getAskSpeechletResponse("May I suggest a more hospitable temperature bro?");
+              }
               response.append(requestHttp(intent));
             } catch (IOException e) {
               e.printStackTrace();
@@ -124,7 +129,17 @@ public class TemperatureSpeechlet implements Speechlet {
         else if ("IncreaseTemperatureGradientIntent".equals(intentName)) {
           StringBuilder response = new StringBuilder();
           try {
-            response.append(increaseTemperatureGradient(intent));
+            response.append(increaseDecreaseTemperatureGradient(intent, true));
+          } catch (IOException e) {
+            e.printStackTrace();
+          }
+//          session.setAttribute(CATEGORY_STAGE, TEMPERATURE_STAGE);
+          return setTemperatureResponse(intent, response.toString(), session);
+        }
+        else if ("DecreaseTemperatureGradientIntent".equals(intentName)) {
+          StringBuilder response = new StringBuilder();
+          try {
+            response.append(increaseDecreaseTemperatureGradient(intent, false));
           } catch (IOException e) {
             e.printStackTrace();
           }
@@ -132,7 +147,7 @@ public class TemperatureSpeechlet implements Speechlet {
           return setTemperatureResponse(intent, response.toString(), session);
         }
         else if ("DecreaseTemperatureIntent".equals(intentName)) {
-            return decreaseTemperatureResponse();
+            return decreaseTemperatureResponse(session);
         }
 //        else if ("SetTemperatureIntent".equals(intentName)) {
 //          try {
@@ -146,7 +161,10 @@ public class TemperatureSpeechlet implements Speechlet {
           if(session.getAttributes().containsKey(CATEGORY_STAGE)) {
             System.out.println("enter");
             if (session.getAttribute(CATEGORY_STAGE).equals(TEMPERATURE_STAGE)) {
-              return whatElseResponse();
+              return apaLagiMauResponse();
+            }
+            if (session.getAttribute(CATEGORY_STAGE).equals(DECREASE_TEMP_STAGE)) {
+              return increaseTemperatureResponse();
             }
           }
           return yesResponse();
@@ -167,6 +185,11 @@ public class TemperatureSpeechlet implements Speechlet {
           return SpeechletResponse.newTellResponse(outputSpeech);
         }
         else if ("AMAZON.CancelIntent".equals(intentName)) {
+          if(session.getAttributes().containsKey(CATEGORY_STAGE)) {
+            if (session.getAttribute(CATEGORY_STAGE).equals(TEMPERATURE_STAGE)) {
+              increaseTemperatureResponse();
+            }
+          }
           PlainTextOutputSpeech outputSpeech = new PlainTextOutputSpeech();
           outputSpeech.setText("enjoy your drive bj, good bye.");
 
@@ -184,7 +207,7 @@ public class TemperatureSpeechlet implements Speechlet {
 
     Item item = new Item();
     item.withString("UserId",intent.getSlot("UserId").getValue())
-    .withString("UserTemp","26");
+        .withString("UserTemp","26");
 
     table.putItem(item);
 
@@ -206,7 +229,7 @@ public class TemperatureSpeechlet implements Speechlet {
     return SpeechletResponse.newTellResponse(speech, card);
   }
 
-  private SpeechletResponse whatElseResponse() {
+  private SpeechletResponse apaLagiMauResponse() {
     String speechText = "what else can I do for you my friend?";
 //
 //    String speech2 = "the temperature is now set at " + temperature + " degrees, cool or not?";
@@ -214,10 +237,17 @@ public class TemperatureSpeechlet implements Speechlet {
     return getAskSpeechletResponse(speechText);
   }
 
-  private String increaseTemperatureGradient(Intent intent) throws IOException {
+  private String increaseDecreaseTemperatureGradient(Intent intent, boolean increaseOrDecrease) throws IOException {
      int temp = Integer.parseInt(getCurrentTemp());
      int gradient = Integer.parseInt(intent.getSlot(GRADIENT_TEMPERATURE).getValue());
-     String finalTemp = String.valueOf(temp+gradient);
+    String finalTemp="";
+    System.out.println("gradient intent: " + increaseOrDecrease);
+
+     if(increaseOrDecrease)
+        finalTemp = String.valueOf(temp+gradient);
+     else
+       finalTemp = String.valueOf(temp-gradient);
+
     List<NameValuePair> params = new ArrayList<NameValuePair>();
     params.add(new BasicNameValuePair("temp", finalTemp));
 
@@ -300,7 +330,7 @@ public class TemperatureSpeechlet implements Speechlet {
      *
      * @return SpeechletResponse spoken and visual response for the given intent
      */
-    private SpeechletResponse increaseTemperatureResponse(Session session) {
+    private SpeechletResponse increaseTemperatureResponse() {
         String speechText = "what temperature would you like me to set?";
 
         // Create the Simple card content.
@@ -319,7 +349,7 @@ public class TemperatureSpeechlet implements Speechlet {
         return SpeechletResponse.newAskResponse(speech, reprompt, card);
     }
 
-  private SpeechletResponse decreaseTemperatureResponse() {
+  private SpeechletResponse decreaseTemperatureResponse(Session session) {
     String speechText = "u want to decrease the temperature?";
 
     // Create the Simple card content.
@@ -333,6 +363,8 @@ public class TemperatureSpeechlet implements Speechlet {
 
     Reprompt reprompt = new Reprompt();
     reprompt.setOutputSpeech(speech);
+
+    session.setAttribute(CATEGORY_STAGE, DECREASE_TEMP_STAGE);
 
     return SpeechletResponse.newAskResponse(speech, reprompt, card);
   }
