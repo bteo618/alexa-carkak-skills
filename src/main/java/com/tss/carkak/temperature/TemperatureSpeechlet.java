@@ -23,12 +23,13 @@ import com.amazon.speech.speechlet.SessionStartedRequest;
 import com.amazon.speech.speechlet.Speechlet;
 import com.amazon.speech.speechlet.SpeechletException;
 import com.amazon.speech.speechlet.SpeechletResponse;
+import com.amazon.speech.ui.OutputSpeech;
 import com.amazon.speech.ui.PlainTextOutputSpeech;
 import com.amazon.speech.ui.Reprompt;
 import com.amazon.speech.ui.SimpleCard;
+import com.amazon.speech.ui.SsmlOutputSpeech;
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDBClientBuilder;
-import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
 import com.amazonaws.services.dynamodbv2.document.DynamoDB;
 import com.amazonaws.services.dynamodbv2.document.Item;
 import com.amazonaws.services.dynamodbv2.document.Table;
@@ -37,10 +38,8 @@ import com.tss.carkak.temperature.storage.UserProfile;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Scanner;
 
 /**
  * This Carkak skill shows how to adjust the temperature in car through speechlet requests.
@@ -49,12 +48,20 @@ public class TemperatureSpeechlet implements Speechlet {
     private static final Logger log = LoggerFactory.getLogger(TemperatureSpeechlet.class);
   private static final String SLOT_TEMPERATURE = "SetTemperature";
 
-  private Table table;
-  private UserProfile user;
-  private final String DEFAULT_USER = "default";
+  protected Table table;
+  protected UserProfile user;
+  protected final String DEFAULT_USER = "default";
+  protected Item item;
   private static final String GRADIENT_TEMPERATURE = "IncreaseTemperatureVal";
   private static final String CATEGORY_STAGE = "categoryStage";
   private static final String TEMPERATURE_STAGE = "setTemperatureStage";
+  private static final String DECREASE_TEMP_STAGE = "decreaseTemperature";
+  private static final int MAX_TEMP = 30;
+  private static final int MIN_TEMP = 16;
+
+  protected static final String ITEM_PK_USER_ID = "UserId";
+  protected static final String ITEM_USER_TEMPERATURE = "UserTemp";
+
 
     @Override
     public void onSessionStarted(final SessionStartedRequest request, final Session session)
@@ -88,12 +95,13 @@ public class TemperatureSpeechlet implements Speechlet {
 
         Intent intent = request.getIntent();
         String intentName = (intent != null) ? intent.getName() : null;
+      String speechOutput = "", repromptText = "";
 
       if ("IntroduceIntent".equals(intentName)) {
         return setIntroduceResponse(intent, session);
       }
         else if ("DecreaseTemperatureIntent".equals(intentName)) {
-        return decreaseTemperatureResponse();
+        return decreaseTemperatureResponse(session);
       }else if ("IncreaseTemperatureIntent".equals(intentName)) {
           StringBuilder response = new StringBuilder();
 //          if(session.getAttributes().containsKey(CATEGORY_STAGE)) {
@@ -107,22 +115,36 @@ public class TemperatureSpeechlet implements Speechlet {
 //              return setTemperatureResponse(intent, response.toString(), session);
 //            }
 //          }
-            return increaseTemperatureResponse(session);
+            return increaseTemperatureResponse();
         }
         else if ("SetTemperatureIntent".equals(intentName)) {
           StringBuilder response = new StringBuilder();
-            try {
-              response.append(requestHttp(intent));
-            } catch (IOException e) {
-              e.printStackTrace();
-            }
+              int requestedTemp = Integer.parseInt(intent.getSlot(SLOT_TEMPERATURE).getValue());
+              if (requestedTemp > MAX_TEMP || requestedTemp < MIN_TEMP) {
+                return getAskSpeechletResponse("May I suggest a more hospitable temperature bro?");
+              }
+        try {
+          response.append(requestHttp(intent));
+        } catch (IOException e) {
+          e.printStackTrace();
+        }
 //            session.setAttribute(CATEGORY_STAGE, TEMPERATURE_STAGE);
             return setTemperatureResponse(intent, response.toString(), session);
         }
         else if ("IncreaseTemperatureGradientIntent".equals(intentName)) {
           StringBuilder response = new StringBuilder();
           try {
-            response.append(increaseTemperatureGradient(intent));
+            response.append(increaseDecreaseTemperatureGradient(intent, true));
+          } catch (IOException e) {
+            e.printStackTrace();
+          }
+//          session.setAttribute(CATEGORY_STAGE, TEMPERATURE_STAGE);
+          return setTemperatureResponse(intent, response.toString(), session);
+        }
+        else if ("DecreaseTemperatureGradientIntent".equals(intentName)) {
+          StringBuilder response = new StringBuilder();
+          try {
+            response.append(increaseDecreaseTemperatureGradient(intent, false));
           } catch (IOException e) {
             e.printStackTrace();
           }
@@ -130,7 +152,7 @@ public class TemperatureSpeechlet implements Speechlet {
           return setTemperatureResponse(intent, response.toString(), session);
         }
         else if ("DecreaseTemperatureIntent".equals(intentName)) {
-            return decreaseTemperatureResponse();
+            return decreaseTemperatureResponse(session);
         }
 //        else if ("SetTemperatureIntent".equals(intentName)) {
 //          try {
@@ -144,7 +166,10 @@ public class TemperatureSpeechlet implements Speechlet {
           if(session.getAttributes().containsKey(CATEGORY_STAGE)) {
             System.out.println("enter");
             if (session.getAttribute(CATEGORY_STAGE).equals(TEMPERATURE_STAGE)) {
-              return whatElseResponse();
+              return apaLagiMauResponse();
+            }
+            if (session.getAttribute(CATEGORY_STAGE).equals(DECREASE_TEMP_STAGE)) {
+              return increaseTemperatureResponse();
             }
           }
           return yesResponse();
@@ -159,6 +184,12 @@ public class TemperatureSpeechlet implements Speechlet {
             return getHelpResponse();
         }
         else if ("AMAZON.StopIntent".equals(intentName)) {
+        if(session.getAttributes().containsKey(CATEGORY_STAGE)) {
+          if (session.getAttribute(CATEGORY_STAGE).equals(TEMPERATURE_STAGE)) {
+            System.out.println(intent.getSlot(SLOT_TEMPERATURE).getValue());
+            return increaseTemperatureResponse();
+          }
+        }
           PlainTextOutputSpeech outputSpeech = new PlainTextOutputSpeech();
           String speechText = "enjoy your drive %s, good bye.";
           String userId = user.getUserId();
@@ -177,48 +208,69 @@ public class TemperatureSpeechlet implements Speechlet {
           return SpeechletResponse.newTellResponse(outputSpeech);
         }
         else {
-            throw new SpeechletException("Invalid Intent");
+        speechOutput =
+            "Sorry, I couldn't correctly retrieve the joke. You can say, help.";
+        repromptText = "You can say, help.";
         }
+      return newAskResponse("<speak>" + speechOutput + "</speak>", true, repromptText, false);
     }
+
+  private SpeechletResponse newAskResponse(String stringOutput, boolean isOutputSsml,
+                                           String repromptText, boolean isRepromptSsml) {
+    OutputSpeech outputSpeech, repromptOutputSpeech;
+    if (isOutputSsml) {
+      outputSpeech = new SsmlOutputSpeech();
+      ((SsmlOutputSpeech) outputSpeech).setSsml(stringOutput);
+    } else {
+      outputSpeech = new PlainTextOutputSpeech();
+      ((PlainTextOutputSpeech) outputSpeech).setText(stringOutput);
+    }
+
+
+    if (isRepromptSsml) {
+      repromptOutputSpeech = new SsmlOutputSpeech();
+      ((SsmlOutputSpeech) repromptOutputSpeech).setSsml(repromptText);
+    } else {
+      repromptOutputSpeech = new PlainTextOutputSpeech();
+      ((PlainTextOutputSpeech) repromptOutputSpeech).setText(repromptText);
+    }
+    Reprompt reprompt = new Reprompt();
+    reprompt.setOutputSpeech(repromptOutputSpeech);
+    return SpeechletResponse.newAskResponse(outputSpeech, reprompt);
+  }
 
   private SpeechletResponse setIntroduceResponse(Intent intent, Session session){
     String speechText = "";
-    Item item = table.getItem("UserId",intent.getSlot("UserId").getValue());
-
-    // Create the Simple card content.
-    SimpleCard card = new SimpleCard();
-    card.setTitle("Carkak Temperature");
-    card.setContent(speechText);
-
     // Create the plain text output.
     PlainTextOutputSpeech speech = new PlainTextOutputSpeech();
 
     boolean isNewUser = false;
 
+    item = table.getItem(ITEM_PK_USER_ID,intent.getSlot(ITEM_PK_USER_ID).getValue());
     try{
       if(null!=item){
         log.info(item.toString());
-        Object userId = item.get("UserId");
-        Object userTemp = item.get("UserTemp");
+        Object userId = item.get(ITEM_PK_USER_ID);
+        Object userTemp = item.get(ITEM_USER_TEMPERATURE);
         user = new UserProfile(userId.toString(),userTemp==null?getCurrentTemp():userTemp.toString());
         speechText = switchUser();
         speech.setText(speechText);
         isNewUser = false;
       }else{
-        user = new UserProfile(intent.getSlot("UserId").getValue(),getCurrentTemp());
+        user = new UserProfile(intent.getSlot(ITEM_PK_USER_ID).getValue(),getCurrentTemp());
         speechText = registerUser();
-        speech.setText(speechText);
         isNewUser = true;
       }
     }catch(IOException ex){
       log.error(ex.toString());
     }
 
-    // Create reprompt
-    Reprompt reprompt = new Reprompt();
-    reprompt.setOutputSpeech(speech);
+    // Create the Simple card content.
+    SimpleCard card = new SimpleCard();
+    card.setTitle("Carkak Temperature");
+    card.setContent(speechText);
 
-    return isNewUser ? SpeechletResponse.newAskResponse(speech,reprompt,card) : SpeechletResponse
+    return isNewUser ? getAskSpeechletResponse(speechText) : SpeechletResponse
         .newTellResponse(speech,
         card);
   }
@@ -235,8 +287,8 @@ public class TemperatureSpeechlet implements Speechlet {
 
   private String registerUser(){
     Item item = new Item();
-    item.withString("UserId",user.getUserId())
-        .withString("UserTemp",user.getUserTemp());
+    item.withString(ITEM_PK_USER_ID,user.getUserId())
+        .withString(ITEM_USER_TEMPERATURE,user.getUserTemp());
 
     table.putItem(item);
     String speechText = "Hi %s, you have been registered and your default preference temperature " +
@@ -245,7 +297,7 @@ public class TemperatureSpeechlet implements Speechlet {
     return speechText;
   }
 
-  private SpeechletResponse whatElseResponse() {
+  private SpeechletResponse apaLagiMauResponse() {
     String speechText = "what else can I do for you my friend?";
 //
 //    String speech2 = "the temperature is now set at " + temperature + " degrees, cool or not?";
@@ -253,10 +305,17 @@ public class TemperatureSpeechlet implements Speechlet {
     return getAskSpeechletResponse(speechText);
   }
 
-  private String increaseTemperatureGradient(Intent intent) throws IOException {
+  private String increaseDecreaseTemperatureGradient(Intent intent, boolean increaseOrDecrease) throws IOException {
      int temp = Integer.parseInt(getCurrentTemp());
      int gradient = Integer.parseInt(intent.getSlot(GRADIENT_TEMPERATURE).getValue());
-     String finalTemp = String.valueOf(temp+gradient);
+    String finalTemp="";
+    System.out.println("gradient intent: " + increaseOrDecrease);
+
+     if(increaseOrDecrease)
+        finalTemp = String.valueOf(temp+gradient);
+     else
+       finalTemp = String.valueOf(temp-gradient);
+
     List<NameValuePair> params = new ArrayList<NameValuePair>();
     params.add(new BasicNameValuePair("temp", finalTemp));
 
@@ -340,7 +399,7 @@ public class TemperatureSpeechlet implements Speechlet {
      *
      * @return SpeechletResponse spoken and visual response for the given intent
      */
-    private SpeechletResponse increaseTemperatureResponse(Session session) {
+    private SpeechletResponse increaseTemperatureResponse() {
         String speechText = "what temperature would you like me to set?";
 
         // Create the Simple card content.
@@ -359,7 +418,7 @@ public class TemperatureSpeechlet implements Speechlet {
         return SpeechletResponse.newAskResponse(speech, reprompt, card);
     }
 
-  private SpeechletResponse decreaseTemperatureResponse() {
+  private SpeechletResponse decreaseTemperatureResponse(Session session) {
     String speechText = "u want to decrease the temperature?";
 
     // Create the Simple card content.
@@ -374,6 +433,8 @@ public class TemperatureSpeechlet implements Speechlet {
     Reprompt reprompt = new Reprompt();
     reprompt.setOutputSpeech(speech);
 
+    session.setAttribute(CATEGORY_STAGE, DECREASE_TEMP_STAGE);
+
     return SpeechletResponse.newAskResponse(speech, reprompt, card);
   }
 
@@ -382,7 +443,6 @@ public class TemperatureSpeechlet implements Speechlet {
     List<NameValuePair> params = new ArrayList<NameValuePair>();
     params.add(new BasicNameValuePair("temp", intent.getSlot(SLOT_TEMPERATURE).getValue()));
 
-    System.out.println("starttt: " + intent.getSlot(SLOT_TEMPERATURE).getValue());
 //    Gson gson = new Gson();
 
 //    for (NameValuePair nvp : params) {
@@ -399,19 +459,26 @@ public class TemperatureSpeechlet implements Speechlet {
     return getCurrentTemp();
   }
 
-  private void httpPostTemp(List<NameValuePair> params) throws IOException {
+  private void httpPostTurnOnLight() throws IOException {
     HttpClient client = new DefaultHttpClient();
-    HttpPost httpPost = new HttpPost("http://ec2-13-229-56-107.ap-southeast-1.compute.amazonaws.com/methods/setTemp");
-    httpPost.setEntity(new UrlEncodedFormEntity(params));
+    HttpPost httpPost = new HttpPost("http://ec2-13-229-56-107.ap-southeast-1.compute.amazonaws.com/methods/onLamp");
     HttpResponse resp = client.execute(httpPost);
     EntityUtils.consumeQuietly(resp.getEntity());
   }
 
-  private SpeechletResponse setTemperatureResponse(Intent intent, String temperature, Session session) {
+  private void httpPostTurnOffLight() throws IOException {
+    HttpClient client = new DefaultHttpClient();
+    HttpPost httpPost = new HttpPost("http://ec2-13-229-56-107.ap-southeast-1.compute.amazonaws.com/methods/offLamp");
+    HttpResponse resp = client.execute(httpPost);
+    EntityUtils.consumeQuietly(resp.getEntity());
+  }
+
+  protected SpeechletResponse setTemperatureResponse(Intent intent, String temperature, Session session) {
     String speechText = "the temperature is now set to %s degree, is that ok?";
     speechText = String.format(speechText, temperature);
-//
+
     updateUserTemperature(user.getUserId(), temperature);
+
 //    String speech2 = "the temperature is now set at " + temperature + " degrees, cool or not?";
 
     session.setAttribute(CATEGORY_STAGE, TEMPERATURE_STAGE);
@@ -420,14 +487,14 @@ public class TemperatureSpeechlet implements Speechlet {
   }
 
   private void updateUserTemperature(String userId, String temperature){
-    Item item = new Item();
-    item.withString("UserId",userId)
-        .withString("UserTemp",temperature);
+    item = new Item();
+    item.withString(ITEM_PK_USER_ID,userId)
+        .withString(ITEM_USER_TEMPERATURE,temperature);
 
     table.putItem(item);
   }
 
-  private SpeechletResponse getAskSpeechletResponse (String speechText) {
+  protected SpeechletResponse getAskSpeechletResponse (String speechText) {
     // Create the Simple card content.
     SimpleCard card = new SimpleCard();
     card.setTitle("Carkak Temperature");
@@ -505,6 +572,12 @@ public class TemperatureSpeechlet implements Speechlet {
   }
 
   private SpeechletResponse getTurnOffLightResponse() {
+    try {
+      httpPostTurnOffLight();
+    } catch (IOException e) {
+      e.printStackTrace();
+    }
+
     PlainTextOutputSpeech outputSpeech = new PlainTextOutputSpeech();
     outputSpeech.setText("It is off.");
 
@@ -512,9 +585,22 @@ public class TemperatureSpeechlet implements Speechlet {
   }
 
   private SpeechletResponse getTurnOnLightResponse() {
+    try {
+      httpPostTurnOnLight();
+    } catch (IOException e) {
+      e.printStackTrace();
+    }
     PlainTextOutputSpeech outputSpeech = new PlainTextOutputSpeech();
     outputSpeech.setText("It is on.");
 
     return SpeechletResponse.newTellResponse(outputSpeech);
+  }
+
+  private void httpPostTemp(List<NameValuePair> params) throws IOException {
+    HttpClient client = new DefaultHttpClient();
+    HttpPost httpPost = new HttpPost("http://ec2-13-229-56-107.ap-southeast-1.compute.amazonaws.com/methods/setTemp");
+    httpPost.setEntity(new UrlEncodedFormEntity(params));
+    HttpResponse resp = client.execute(httpPost);
+    EntityUtils.consumeQuietly(resp.getEntity());
   }
 }
